@@ -8,6 +8,8 @@
 
 # Renesas RL78 architecture for Ghidra
 
+[![Sponsor Aleph Void](https://img.shields.io/badge/Sponsor-Aleph%20Void-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/aleph-void)
+
 Supports:
 - RL78-S1: RL78/G10, RL78/G1M, RL78/G1N
 - RL78-S2: RL78/G12, RL78/G13, RL78/G13A, RL78/G1A, RL78/G1C, RL78/G1D, RL78/G1E, RL78/G1P, RL78/I1A, RL78/L12, RL78/L13, RL78/D1A, RL78/F12
