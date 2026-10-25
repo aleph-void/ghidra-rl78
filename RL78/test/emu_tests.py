@@ -70,6 +70,10 @@ TESTS = [
     ("call_ret", ["call $!sub_seven", "mov x, a"], {"SP": 0xfe80}, {"A": 7, "X": 7, "SP": 0xfe80}),
     ("call_frame", ["call !!sub_sp"], {"SP": 0xfe80}, {"BC": 0xfe7c, "SP": 0xfe80}),
     ("callt", ["callt [0x80]"], {"SP": 0xfe80}, {"A": 7, "SP": 0xfe80}),
+    # BRK: push PSW and the return address, clear IE, enter the handler at the vector in 0007E;
+    # RETB restores PSW (IE set again) and returns after the BRK
+    ("brk_retb", ["brk", "mov x, a"], {"SP": 0xfe80, "PSW": 0x86},
+     {"A": 9, "X": 9, "SP": 0xfe80, "PSW": 0x86, "m1:ffe7f": 0x86}),
     ("call_ax", ["movw ax, #sub_seven", "call ax"], {"SP": 0xfe80, "CS": 0}, {"A": 7}),
     ("push_pop", ["push ax", "pop bc", "push psw", "pop de"], {"AX": 0x1234, "SP": 0xfe80, "PSW": 0x41},
      {"BC": 0x1234, "D": 0x41, "SP": 0xfe80}),
@@ -97,13 +101,16 @@ sub_sp:
 	movw ax, sp
 	movw bc, ax
 	ret
+sub_brk:
+	mov a, #9
+	retb
 """
 
 
 def main():
     out = sys.argv[1]
     brk = sys.argv[sys.argv.index("--break") + 1] if "--break" in sys.argv else None
-    s = ["\t.text", "\t.org 0x80", "\t.word sub_seven", "\t.org 0x200"]
+    s = ["\t.text", "\t.org 0x7e", "\t.short sub_brk", "\t.word sub_seven", "\t.org 0x200"]
     for i, (name, asm, init, exp) in enumerate(TESTS):
         s.append("t%d:" % i)
         for a in asm:

@@ -29,8 +29,16 @@ unspecified: S3; G13 and G10: S2).
   `RETI`/`RETB` with the 4-byte stack frame; `HALT`, `STOP`, `BRK` fall through.
 - cspec: the GCC RL78 ABI (all arguments on the stack, return value in r8-r15 = bank 1 at
   FFEF0). DWARF register mapping for GCC. SFR areas (F0000-F07FF, FFF00-FFFEF) are volatile.
-- `ghidra_scripts/RL78Vectors.java` marks up the vector and CALLT tables of a raw image and
-  creates functions at their targets.
+- `RL78VectorAnalyzer` (auto-analysis, ELF and raw images):
+  - It types the vector (00000-0007F) and CALLT (00080-000BF) tables as pointers and makes
+    functions at their targets (`reset_handler`, `isr_NN`, `callt_fn_NN`).
+  - It removes the bogus entry function at 00000.
+  - It maps the flash mirror (PMC.MAA = 0, the reset value). The free part of F2000-FFEDF whose
+    00000-0FFFF counterpart is loaded becomes a byte-mapped block, so near pointers to
+    constants in flash resolve.
+  - `ghidra_scripts/RL78Vectors.java` does the vector markup on demand.
+- `BRK` pushes PSW and the return address, clears IE and calls the handler at the vector in
+  0007E (it returns with RETB).
 
 ## Results
 
@@ -43,8 +51,8 @@ the S3 language, G13 for S2). "Semantic" allows the spellings listed in `test/co
 | All 2-byte opcode prefixes and 3 bytes after `ES:`, 3 operand tails (393,728 slots) | both decode 393,146; 99.80% semantic, 95.16% exact (both languages). Every difference is a confirmed objdump quirk, see below |
 | 60,000 random 8-byte slots | 100.00% semantic, 97.56% exact; 0 Ghidra-only, 0 objdump-only |
 | Every-entry decode test (`CoverageCheck.java`) | 466/466 constructors reached (S3), 452/452 (S2) |
-| p-code emulator (`EmuCheck.java`) | 56/56 hand-computed sequences pass (ALU and flags, every addressing mode, ES:, shifts/rotates, bit ops and bit branches, skips, call/ret/callt, push/pop, banks, S3 multiply/divide/MAC); a deliberately wrong expectation fails |
-| Real binaries: 11 GCC-built ELFs from public sources (below), imported without forcing the language | language picked by the opinion (3 S2, 8 S3); 357 functions, 26,600 instructions; 0 bad-instruction or error bookmarks; 357/357 functions decompile; disassembly 100% semantic (70-75% exact) vs `rl78-elf-objdump -d` at the same addresses |
+| p-code emulator (`EmuCheck.java`) | 57/57 hand-computed sequences pass (ALU and flags, every addressing mode, ES:, shifts/rotates, bit ops and bit branches, skips, call/ret/callt, BRK/RETB, push/pop, banks, S3 multiply/divide/MAC); a deliberately wrong expectation fails |
+| Real binaries: 11 GCC-built ELFs from public sources (below), imported without forcing the language | language picked by the opinion (3 S2, 8 S3); 346 functions (357 before the bogus 00000 entry functions were removed), 26,600 instructions; 0 bad-instruction or error bookmarks; 357/357 functions decompile; disassembly 100% semantic (70-75% exact) vs `rl78-elf-objdump -d` at the same addresses |
 | Builds | `.sla` 27.7 KB (S3) / 26.8 KB (S2); compiles and builds with Ghidra 12.1.3, 12.1.4 and 12.2 |
 
 Before Ghidra-Rare's changes the upstream module agreed with objdump on 52.9% of the random slots
@@ -81,23 +89,30 @@ this fork; the regenerated spec compiles on 12.1.3, 12.1.4 and 12.2.
 
 ## Known gaps
 
-- GCC's crt0 defines the absolute symbol `__rl78_abs__ = 0`; Ghidra's ELF loader turns it into
-  an entry-point function on the reset vector, which decompiles to `halt_baddata` (one per
-  image, harmless).
-- Only the GCC calling convention is described; CC-RL and IAR register-argument conventions are
-  not.
-- The flash mirror (MAA) is not modelled: data reads in F0000-FFFFF that mirror flash do not
-  resolve to the code bytes.
-- `BRK` is a returning userop rather than a call through the 0007E vector; `BRK1` (`FF`,
-  objdump's name for erased flash) is a userop.
-- AC is left unchanged by ADDW/SUBW/CMPW (the manual calls it undefined).
-- The register bank follows `SEL RBn` along the flow only; an interrupt handler reached without
-  a `SEL` uses bank 0 unless its context is set.
-- Ghidra's emulator does not run segmentop injections; `EmuCheck.java` supplies `segment()` as a
-  callback.
+Fixed in this round (they were listed here before):
 
-Unverified: CC-RL or IAR output and RL78-S1 (G10) images (no freely licensed samples were
-found); third-party prebuilt firmware (the samples are built here from public source).
+- GCC crt0's absolute symbol `__rl78_abs__ = 0` no longer becomes an entry function at the
+  reset vector. The 11 samples had one bogus `halt_baddata` function each.
+- `BRK` calls the handler at the vector in 0007E. It was a returning userop; an emulator
+  test covers BRK/RETB.
+- The flash mirror (MAA = 0) is mapped.
+- The vector/CALLT markup runs automatically.
+
+Remaining, with the reason:
+
+- **Register bank.** The bank follows `SEL RBn` along the flow. An interrupt handler entered
+  without a `SEL` runs in whatever bank PSW.RBS selects at that moment, which is run-time
+  state. Set the RBS context on such a handler to change it.
+- **Flash mirror.** Only the reset configuration MAA = 0 is mapped. MAA = 1 (mirror
+  10000-1FFFF) is selected at run time through PMC, and the RL78-S1 mirror window
+  (F8000-FDEFF) differs per chip, so neither is mapped.
+- **Emulator `segment()`.** Ghidra's emulator does not run segmentop injections, so it needs
+  `segment()` as a callback (EmuCheck.java supplies one). This is a Ghidra limitation; the
+  decompiler applies the segmentop.
+- **CC-RL and IAR conventions.** Only the GCC calling convention is described. There are no
+  freely licensed CC-RL or IAR binaries to check them against.
+- `BRK1` (`FF`, erased flash) is a userop: executing it resets the chip.
+- AC is left unchanged by ADDW/SUBW/CMPW, which the manual leaves undefined.
 
 ## Testing
 

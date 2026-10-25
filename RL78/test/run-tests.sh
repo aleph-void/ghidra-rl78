@@ -31,6 +31,7 @@ ls -l "$MOD"/data/languages/*.sla | awk '{print "   " $5, $9}'
 P="$GHIDRA_INSTALL_DIR/Ghidra/Processors/RL78"
 if [[ ! -e $P ]]; then ln -s "$MOD" "$P"; elif [[ $(readlink -f "$P") != "$MOD" ]]; then
 	echo "warning: $P exists and is not this module" >&2; fi
+"$HERE/build-jar.sh"
 
 if [[ -z ${SLOTDIS:-} ]]; then
 	: "${BU_SRC:?set SLOTDIS, or BU_SRC and BU_BUILD to build it}" "${BU_BUILD:?}"

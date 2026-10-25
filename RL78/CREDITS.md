@@ -60,7 +60,15 @@ Each item names the problem and how it was found.
    value (0 in GCC images) a call target. Found by real binaries.
 10. **`ghidra_scripts/RL78Vectors.java`** marks up the vector and CALLT tables of raw images.
 
-11. **README.md** (the upstream README at the repository root). The core list now maps each
+11. **Second round, closing the known gaps.**
+    - `RL78VectorAnalyzer` marks up the vector and CALLT tables automatically.
+    - It removes the bogus entry function GCC's `__rl78_abs__` produced at 00000 (11 of the
+      real samples).
+    - It maps the flash mirror (MAA = 0) as a byte-mapped block.
+    - `BRK` is a call through the 0007E vector; it was a returning userop.
+    - `test/build-jar.sh` builds `lib/RL78.jar` for development installs, and an emulator
+      test covers BRK/RETB.
+12. **README.md** (the upstream README at the repository root). The core list now maps each
     core to a language (S3: `RL78:LE:16:default`; S2 and S1/G10: `RL78:LE:16:S2`, with what S1
     lacks). The install steps (copy into `Ghidra/Processors`, GVM) were replaced by the release
     zip and `gradle buildExtension` steps; GVM installs the upstream release, not this fork. It
