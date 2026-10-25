@@ -95,7 +95,6 @@ define token immaddr (24)
 
 define pcodeop halt;
 define pcodeop stop;
-define pcodeop brk;
 define pcodeop brk1;
 
 # ---- flag helpers ----

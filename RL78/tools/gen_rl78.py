@@ -347,9 +347,11 @@ C("call rel16", "op=0xFE; rel16", "pushpc(inst_next); call rel16;")
 C("call rp45", "op=0x61; op_lo=0xA & op_hi>=0xC & rp45", "local t:3 = (zext(CS & 0xF) << 16) | zext(rp45); pushpc(inst_next); call [t];")
 emit('callt_t: "["^a^"]" is nnn & mm [ a = 0x80 + mm * 16 + nnn * 2; ] { export *[ram]:2 a; }')
 C("callt callt_t", "op=0x61; b7=1 & b3=0 & op_lo>=4 & op_lo<8 & callt_t", "local t:3 = zext(callt_t); pushpc(inst_next); call [t];")
-# BRK enters the handler at the vector in 0007E and returns with RETB: modelled as a userop
-# that returns, so that an erased or not-yet-loaded vector does not become a call target.
-C("brk", "op=0x61; op=0xCC", "brk();")
+# BRK pushes PSW and the return address like an interrupt, clears IE and calls the handler at
+# the 16-bit vector in 0007E (the handler returns with RETB). An unused vector (0 or FFFF)
+# points at the vector table, which RL78VectorAnalyzer marks up as data, so it does not become
+# a function.
+C("brk", "op=0x61; op=0xCC", "local sp:2 = SP - 4; local sa:3 = segment(NEARSEG, sp); local r:3 = inst_next; *[ram]:3 sa = r; *[ram]:1 (sa + 3) = PSW; SP = sp; IE = 0; local v:2 = *[ram]:2 0x7E:3; local t:3 = zext(v); call [t];")
 C("brk1", "op=0xFF", "brk1();")
 C("ret", "op=0xD7", "local sa:3 = segment(NEARSEG, SP); local t:3 = *[ram]:3 sa; SP = SP + 4; return [t];")
 C("reti", "op=0x61; op=0xFC", "local sa:3 = segment(NEARSEG, SP); local t:3 = *[ram]:3 sa; PSW = *[ram]:1 (sa + 3); SP = SP + 4; return [t];")

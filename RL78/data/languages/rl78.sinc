@@ -460,7 +460,7 @@ jabs20: "!!"^imm20 is imm20 { export *[ram]:1 imm20; }
 :call rp45 is phase=1 & op=0x61; op_lo=0xA & op_hi>=0xC & rp45 { local t:3 = (zext(CS & 0xF) << 16) | zext(rp45); pushpc(inst_next); call [t]; }
 callt_t: "["^a^"]" is nnn & mm [ a = 0x80 + mm * 16 + nnn * 2; ] { export *[ram]:2 a; }
 :callt callt_t is phase=1 & op=0x61; b7=1 & b3=0 & op_lo>=4 & op_lo<8 & callt_t { local t:3 = zext(callt_t); pushpc(inst_next); call [t]; }
-:brk is phase=1 & op=0x61; op=0xCC { brk(); }
+:brk is phase=1 & op=0x61; op=0xCC { local sp:2 = SP - 4; local sa:3 = segment(NEARSEG, sp); local r:3 = inst_next; *[ram]:3 sa = r; *[ram]:1 (sa + 3) = PSW; SP = sp; IE = 0; local v:2 = *[ram]:2 0x7E:3; local t:3 = zext(v); call [t]; }
 :brk1 is phase=1 & op=0xFF { brk1(); }
 :ret is phase=1 & op=0xD7 { local sa:3 = segment(NEARSEG, SP); local t:3 = *[ram]:3 sa; SP = SP + 4; return [t]; }
 :reti is phase=1 & op=0x61; op=0xFC { local sa:3 = segment(NEARSEG, SP); local t:3 = *[ram]:3 sa; PSW = *[ram]:1 (sa + 3); SP = SP + 4; return [t]; }
