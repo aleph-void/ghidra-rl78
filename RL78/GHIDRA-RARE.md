@@ -9,7 +9,7 @@ the list of changes.
 | Language ID | Cores | Notes |
 |---|---|---|
 | `RL78:LE:16:default` | RL78-S3 (G14, G23, ...) | includes MULHU, MULH, DIVHU, DIVWU, MACHU, MACH (`CE FB xx`) |
-| `RL78:LE:16:S2` | RL78-S1/S2 (G10, G12, G13, ...) | `CE FB xx` is a plain `mov 0xffffb, #xx` |
+| `RL78:LE:16:S2` | RL78-S1/S2 (G10, G12, G13, ...) | `CE FB xx` is a plain `mov 0xffffb, #xx`. S1 (G10) also lacks `SEL RBn` and banks 1-3, which this language still decodes |
 
 The ELF opinion matches `EM_RL78` (197) and picks the language from `e_flags` (G14 or
 unspecified: S3; G13 and G10: S2).
@@ -70,6 +70,14 @@ V11.1.0 (MIT) with its GCC RL78 port, and a program linking newlib/libm/libgcc
   here"); Ghidra ignores the prefix there (774 slots).
 - Cosmetic: objdump prints relative branch targets below 0 as 64-bit values and keeps the
   unused top nibble of `!!addr20`.
+
+## Upstream limitations and issues
+
+The upstream README lists no limitations, and the sources have no TODO/FIXME comments. Its
+stale parts (core list without languages, copy-into-Processors and GVM install) were updated in
+the root README.md. Upstream issues: #1 (`shl C` carry typo, and PR #2 with the same fix) and #3
+(compile errors on Ghidra 12.1.2) are closed and were fixed upstream (77d1a78, v0.3.0) before
+this fork; the regenerated spec compiles on 12.1.3, 12.1.4 and 12.2.
 
 ## Known gaps
 

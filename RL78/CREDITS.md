@@ -60,6 +60,14 @@ Each item names the problem and how it was found.
    value (0 in GCC images) a call target. Found by real binaries.
 10. **`ghidra_scripts/RL78Vectors.java`** marks up the vector and CALLT tables of raw images.
 
-Ghidra-Rare-only files (not in the fork): `README.md`, `CREDITS.md`, `build.gradle`,
-`extension.properties`, `.gitignore`, `LICENSE` (copied from the upstream repository root) and
-`test/`.
+11. **README.md** (the upstream README at the repository root). The core list now maps each
+    core to a language (S3: `RL78:LE:16:default`; S2 and S1/G10: `RL78:LE:16:S2`, with what S1
+    lacks). The install steps (copy into `Ghidra/Processors`, GVM) were replaced by the release
+    zip and `gradle buildExtension` steps; GVM installs the upstream release, not this fork. It
+    now lists the upstream issues (#1 `shl C` typo and duplicate PR #2, #3 compile errors on
+    12.1.2; both fixed upstream before the fork) and links the Releases page and GHIDRA-RARE.md.
+    `RL78/README.md` (upstream, a single heading) points to the root README.
+
+Ghidra-Rare additions (not upstream): `GHIDRA-RARE.md`, `CREDITS.md`, `build.gradle`,
+`extension.properties`, `.gitignore`, `LICENSE` (copied from the upstream repository root),
+`../.github/workflows/ghidra-rare-release.yml` and `test/`.
